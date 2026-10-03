@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cronometro</title>
+<style>
+:root{--green:#30d158;--red:#ff453a;--orange:#ff9f0a;--sep:#2c2c2e;
+--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Roboto,"Segoe UI",Arial,sans-serif;
+color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:#000}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;height:100%;background:#000;color:#fff;font-family:var(--font);display:flex;justify-content:center;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.app{--btn:min(19.6vw,84px);position:relative;width:100%;max-width:430px;height:100%;display:flex;flex-direction:column}
+.disp{flex:0 0 46%;display:flex;align-items:center;justify-content:center;padding-top:10%}
+#time{display:inline-block;white-space:nowrap;line-height:1;font-size:80px;font-weight:200;font-variant-numeric:tabular-nums}
+#ss{position:relative;display:inline-block}
+#ss::after{content:"";position:absolute;inset:-18% -6%}
+@keyframes blip{50%{opacity:.25}}
+.ctl{position:relative;height:var(--btn);display:flex;align-items:center;justify-content:space-between;padding:0 3.7%}
+.b{width:var(--btn);height:var(--btn);margin:0;padding:0;border:0;border-radius:50%;-webkit-appearance:none;appearance:none;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1;white-space:nowrap;font-family:var(--font);font-size:calc(var(--btn)*.22);color:#fff;background:#333336;cursor:pointer}
+.b:active{opacity:.6}
+.b:disabled{background:#1c1c1e;color:#9a9a9f;cursor:default;opacity:1}
+.b.start{background:#0c2a15;color:var(--green)}
+.b.stop{background:#35100d;color:var(--red)}
+.dots{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:calc(var(--btn)*.115)}
+.dots i{width:calc(var(--btn)*.09);height:calc(var(--btn)*.09);border-radius:50%;background:#6b6b70}
+.dots i.on{background:#fff}
+.laps{flex:1;min-height:0;overflow-y:auto;margin:calc(var(--btn)*.19) 3.4% 0;padding:0;list-style:none;border-top:1px solid var(--sep)}
+.laps li{display:flex;justify-content:space-between;padding:calc(var(--btn)*.15) 0;border-bottom:1px solid var(--sep);font-size:17px;font-variant-numeric:tabular-nums}
+.laps li.g{color:var(--green)}.laps li.r{color:var(--red)}
+.tabs{display:flex;padding:8px 0 4px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:#7d7d82}
+.tab.on{color:var(--orange)}
+.tab svg{width:32px;height:32px}
+.sb,.home{display:none}
+@media (min-width:560px){
+.app{box-shadow:0 0 0 1px #1c1c1e}
+.sb{display:flex;position:absolute;top:0;left:0;right:0;height:54px;padding:16px 30px 0 36px;justify-content:space-between;align-items:center;font-weight:600;font-size:17px}
+.sb div{display:flex;align-items:center;gap:6px}
+.sig{display:flex;align-items:flex-end;gap:2px}.sig i{width:3.5px;background:#fff;border-radius:1px}
+.bat{min-width:34px;height:16px;border-radius:5px;background:linear-gradient(90deg,#fff 0 55%,#5a5a5e 55%);color:#111;font-size:12px;font-weight:700;text-align:center;line-height:16px}
+.tabs{padding-bottom:28px}
+.home{display:block;position:absolute;bottom:8px;left:50%;width:36%;height:5px;margin-left:-18%;border-radius:3px;background:#fff}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<div class="sb"><span id="sbt">00:30</span><div><span class="sig"><i style="height:5px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:14px;opacity:.35"></i></span>
+<svg width="18" height="13" viewBox="0 0 18 13" fill="#fff"><path d="M9 12.5 6.6 10a3.4 3.4 0 0 1 4.8 0zM3.6 7.6a7.4 7.4 0 0 1 10.8 0l-1.3 1.4a5.5 5.5 0 0 0-8.2 0zM.9 4.8a11.3 11.3 0 0 1 16.2 0l-1.3 1.4a9.4 9.4 0 0 0-13.6 0z"/></svg><span class="bat">31</span></div></div>
+
+<div class="disp"><span id="time"><span id="mm">00</span>:<span id="ss">00</span>,<span id="cs">00</span></span></div>
+
+<div class="ctl"><button class="b" id="L" disabled>Giro</button><div class="dots"><i class="on"></i><i></i></div><button class="b start" id="R">Avvia</button></div>
+
+<ul class="laps" id="list"></ul>
+
+<nav class="tabs">
+<div class="tab"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12.5" fill="currentColor"/><g fill="none" stroke="#000" stroke-width="1.6"><ellipse cx="16" cy="16" rx="5.5" ry="12.5"/><path d="M3.5 16h25M5.5 9.5h21M5.5 22.5h21"/></g></svg>Ore locali</div>
+<div class="tab"><svg viewBox="0 0 32 32"><circle cx="16" cy="17" r="10.5" fill="currentColor"/><circle cx="6.5" cy="8" r="4" fill="currentColor"/><circle cx="25.5" cy="8" r="4" fill="currentColor"/><path d="M16 11v6.5h4.5" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 27l-2.5 2.5M25 27l2.5 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Sveglie</div>
+<div class="tab on"><svg viewBox="0 0 32 32"><circle cx="16" cy="18" r="12" fill="currentColor"/><path d="M13 3h6M16 3v3M25 7l2 2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 11.5v7" stroke="#000" stroke-width="2.4" stroke-linecap="round"/><circle cx="16" cy="21" r="1.8" fill="#000"/></svg>Cronometro</div>
+<div class="tab"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="16" cy="17" r="11.5"/><path d="M16 17l-4.5-4.5M16 3v1"/></svg>Timer</div>
+</nav>
+<div class="home"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0');
+const mm=$('#mm'),ss=$('#ss'),cs=$('#cs'),time=$('#time'),L=$('#L'),R=$('#R'),list=$('#list');
+let st='idle',base=0,t0=0,laps=[],cheat=true,raf=0,lapEl=null;
+
+const el=()=>st==='run'?base+Date.now()-t0:base;
+function fmt(ms){ms=Math.max(0,ms);const m=ms/60000|0,h=m/60|0;
+  return{mm:h?h+':'+pad(m%60):pad(m),ss:pad((ms/1000%60)|0),cs:pad((ms/10%100)|0)}}
+const str=ms=>{const f=fmt(ms);return f.mm+':'+f.ss+','+f.cs};
+
+// Where a "stop" lands when the trick is on: 14,70 – 15,30 (always within ±300 ms of 15 s)
+const pick=()=>14700+Math.random()*601|0;
+
+function paint(){const e=el(),f=fmt(e);mm.textContent=f.mm;ss.textContent=f.ss;cs.textContent=f.cs;
+  if(lapEl)lapEl.textContent=str(e-(laps[laps.length-1]||0))}
+function loop(){paint();if(st==='run')raf=requestAnimationFrame(loop)}
+
+function rows(){
+  const d=laps.map((m,i)=>m-(laps[i-1]||0));let best=-1,worst=-1;
+  if(d.length>1){best=d.indexOf(Math.min(...d));worst=d.indexOf(Math.max(...d))}
+  let h=st!=='idle'?`<li><span>Giro ${laps.length+1}</span><span id="cur"></span></li>`:'';
+  for(let i=d.length-1;i>=0;i--)h+=`<li class="${i===best?'g':i===worst?'r':''}"><span>Giro ${i+1}</span><span>${str(d[i])}</span></li>`;
+  list.innerHTML=h;lapEl=$('#cur');paint();
+}
+function ui(){
+  R.textContent=st==='run'?'Stop':'Avvia';R.className='b '+(st==='run'?'stop':'start');
+  L.textContent=st==='stop'?'Azzera':'Giro';L.disabled=st==='idle';
+}
+R.onclick=()=>{
+  if(st==='run'){const real=el();base=cheat?pick():real;st='stop';cancelAnimationFrame(raf)}
+  else{t0=Date.now();st='run'}
+  ui();rows();if(st==='run')loop();
+};
+L.onclick=()=>{
+  if(st==='run'){laps.push(el());rows()}
+  else if(st==='stop'){st='idle';base=0;laps=[];ui();rows()}
+};
+
+// Hold the seconds digits (~0.7 s) to toggle the trick. One dim-blink = ON, two = OFF.
+let hold=0;
+function blip(){ss.style.animation='none';void ss.offsetWidth;ss.style.animation='blip .2s '+(cheat?1:2);
+  if(navigator.vibrate)navigator.vibrate(cheat?30:[30,70,30])}
+ss.addEventListener('pointerdown',()=>{clearTimeout(hold);hold=setTimeout(()=>{cheat=!cheat;blip()},700)});
+['pointerup','pointercancel','pointerleave'].forEach(t=>ss.addEventListener(t,()=>clearTimeout(hold)));
+ss.addEventListener('contextmenu',e=>e.preventDefault());
+
+// Fit the digits to 80% of the screen width, like the original
+function fit(){time.style.fontSize='100px';time.style.fontSize=100*$('#app').clientWidth*.8/time.offsetWidth+'px'}
+addEventListener('resize',fit);if(document.fonts)document.fonts.ready.then(fit);fit();
+
+// Fake status-bar clock (only visible on wide screens)
+const tick=()=>$('#sbt').textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+tick();setInterval(tick,1000);
+ui();rows();
+</script>
+</body>
+</html>
